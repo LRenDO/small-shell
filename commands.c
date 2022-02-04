@@ -9,12 +9,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include "commands.h"
 
 void initializeCommand(command* currCommand)
 {
 	size_t commArgSize = 513 * sizeof(currCommand->commandArgs[0]);
-	memset(currCommand->commandArgs, NULL, sizeof(commArgSize));
+	memset(currCommand->commandArgs, NULL, commArgSize);
 	currCommand->outputFile = NULL;
 	currCommand->inputFile = NULL;
 	currCommand->nextCommand = NULL;
@@ -37,7 +39,6 @@ command* createCommand(char* input)
 {
 	int i = 0;
 	char* saveptr;
-	char* saveptr2;
 	command* currCommand = malloc(sizeof(command));
 	initializeCommand(currCommand);
 	
@@ -61,8 +62,11 @@ command* createCommand(char* input)
 	
 	while (currValue != NULL)
 	{	
+		// Remove New Line Character
+		currValue[strcspn(currValue, "\n")] = '\0';
+
 		// Add Input File
-		if (currValue[0] == '<')
+		if (strncmp(currValue, "<", sizeof("<")) == 0)
 		{
 			currValue = strtok_r(NULL, " ", &saveptr);
 			currCommand->inputFile = calloc(strlen(currValue) + 1, sizeof(char));
@@ -70,23 +74,29 @@ command* createCommand(char* input)
 		}
 
 		// Add Output File
-		else if (currValue[0] == '>')
+		else if (strncmp(currValue, ">", sizeof(">")) == 0)
 		{
 			currValue = strtok_r(NULL, " ", &saveptr);
 			currCommand->outputFile = calloc(strlen(currValue) + 1, sizeof(char));
 			strcpy(currCommand->outputFile, currValue);
 		}
-
-		// Add Background State
-		else if (currValue[0] == '&')
+		
+		// Add Command Arguments
+		else if (strncmp(currValue, "", sizeof("")) != 0)
 		{
-			currCommand->inBackground = true;
-		}
-		else
-		{
-			// Add Command Arguments
-			currCommand->commandArgs[i] = calloc(strlen(currValue) + 1, sizeof(char));
-			strcpy(currCommand->commandArgs[i], currValue);
+			// Add Process ID for $$
+			if (strncmp(currValue, "$$", sizeof("$$")) == 0)
+			{
+				pid_t thisPid = getpid();
+				currCommand->commandArgs[i] = calloc(15, sizeof(char));
+				size_t bufferSize = sizeof(currCommand->commandArgs[i]);
+				snprintf(currCommand->commandArgs[i], bufferSize, "%d", thisPid);
+			}
+			else
+			{
+				currCommand->commandArgs[i] = calloc(strlen(currValue) + 1, sizeof(char));
+				strcpy(currCommand->commandArgs[i], currValue);
+			}
 			i++;
 		}
 
@@ -95,18 +105,25 @@ command* createCommand(char* input)
 
 	}
 
+	// Add Background State
+	if (currCommand->commandArgs[i-1][0] == '&')
+	{
+		free(currCommand->commandArgs[i - 1]);
+		currCommand->commandArgs[i-1] = NULL;
+		currCommand->inBackground = true;
+	}
+
 	return currCommand;
 }
 
 void deconstructCommands(command* currCommand)
 {
-	while (currCommand->nextCommand != NULL)
+	while (currCommand != NULL)
 	{
 		command* emptyCommand = currCommand;
 		free(currCommand->command);
 		free(currCommand->inputFile);
 		free(currCommand->outputFile);
-		// DELETE free(currCommand->inBackground);
 
 		for (int i = 0; i < 513; i++)
 		{

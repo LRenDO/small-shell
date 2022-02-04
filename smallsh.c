@@ -47,7 +47,6 @@ int runShell()
 	// DELETE userInput = malloc(2049 * sizeof(char));
 	size_t bufferSize = 0;
 	int numChar = 0;
-	int isValid = true;
 
 	do
 	{
@@ -55,8 +54,11 @@ int runShell()
 		printf(": ");
 		fflush(stdout);
 
-		// DELETE memset(userInput, '\0', bufferSize);
 		numChar = getline(&userInput, &bufferSize, stdin);
+		if (numChar < 1)
+		{
+			continue;
+		}
 
 		// Process Command
 		newCommand = createCommand(userInput);
@@ -70,15 +72,12 @@ int runShell()
 			tail->nextCommand = newCommand;
 			tail = newCommand;
 		}
-		// DELETE printCommands(newCommand);
 
 		// If whitespace or Comment Prompt again
 		if (newCommand->command == NULL)
 		{
 			continue;
 		}
-
-		// DELETE newCommand->command[strcspn(newCommand->command, "\n")] = '\0';
 
 
 		// If Built in cd Command
