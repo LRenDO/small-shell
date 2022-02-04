@@ -36,12 +36,14 @@ MAIN = main.c
 #---------------#
 SRCS = smallsh.c
 SRCS += commands.c
+SRCS += builtInCommands.c
 
 #---------------#
 # Header  Files #
 #---------------#
 HDRS = smallsh.h
 HDRS += commands.h
+HDRS += builtInCommands.h
 
 #---------------#
 # Test  Files   #

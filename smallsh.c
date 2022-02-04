@@ -12,20 +12,8 @@
 #include <stdbool.h>
 #include "smallsh.h"
 #include "commands.h"
+#include "builtInCommands.h"
 
-bool checkInput(char* input)
-{
-	if (input[0] == '\n')
-	{
-		return false;
-	}
-	else if (input[0] == '#')
-	{
-		return false;
-	}
-
-	return true;
-}
 
 /* int runShell()
 * Description: Runs shell original parent process
@@ -40,11 +28,11 @@ bool checkInput(char* input)
 
 int runShell()
 {
+	printf("pid: %d\n", getpid()); //DELETE after comparing with $$ output
 	char* userInput;
 	command* newCommand = NULL;
 	command* head = NULL;
 	command* tail = NULL;
-	// DELETE userInput = malloc(2049 * sizeof(char));
 	size_t bufferSize = 0;
 	int numChar = 0;
 
@@ -79,23 +67,22 @@ int runShell()
 			continue;
 		}
 
-
 		// If Built in cd Command
 		else if (strncmp(newCommand->command, "cd", sizeof("cd")) == 0)
 		{
-			printf("cd\n");
+			changeDirectory(newCommand);
 		}
 
 		// If Built in status Command
 		else if (strncmp(newCommand->command, "status", sizeof("status")) == 0)
 		{
-			printf("status\n");
+			getStatus();
 		}
 
 		// If Built in exit Command
 		else if (strncmp(newCommand->command, "exit", sizeof("exit")) == 0)
 		{
-			printf("exit\n");
+			prepareExit();
 			break;
 		}
 

@@ -37,6 +37,7 @@ void initializeCommand(command* currCommand)
 */
 command* createCommand(char* input)
 {
+	printf("pid: %d\n", getpid()); //DELETE after comparing with $$ output
 	int i = 0;
 	char* saveptr;
 	command* currCommand = malloc(sizeof(command));

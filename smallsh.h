@@ -7,9 +7,7 @@
 
 #ifndef smallsh_H
 #define smallsh_H
-#include <stdbool.h>
 
-bool checkInput(char* input);
 int runShell();
 
 #endif
