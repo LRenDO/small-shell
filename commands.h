@@ -10,7 +10,7 @@
 #define commands_H
 struct commands
 {
-	char* command;
+	// DELETE char* command;
 	char* commandArgs[513];
 	char* inputFile;
 	char* outputFile;
@@ -23,10 +23,11 @@ struct commands
 typedef struct commands command;
 
 void initializeCommand(command* currCommand);
+void parseVariables(command* currCommand);
 command* createCommand(char* input);
 void deconstructCommands(command* currCommand);
 
-void printCommand(command* currCommand);
+// DELETE void printCommand(command* currCommand);
 void printCommandArgs(command* currCommand);
 void printInputFile(command* currCommand);
 void printOutputFile(command* currCommand);

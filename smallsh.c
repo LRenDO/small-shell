@@ -62,25 +62,25 @@ int runShell()
 		}
 
 		// If whitespace or Comment Prompt again
-		if (newCommand->command == NULL)
+		if (newCommand->commandArgs[0] == NULL)
 		{
 			continue;
 		}
 
 		// If Built in cd Command
-		else if (strncmp(newCommand->command, "cd", sizeof("cd")) == 0)
+		else if (strncmp(newCommand->commandArgs[0], "cd", sizeof("cd")) == 0)
 		{
 			changeDirectory(newCommand);
 		}
 
 		// If Built in status Command
-		else if (strncmp(newCommand->command, "status", sizeof("status")) == 0)
+		else if (strncmp(newCommand->commandArgs[0], "status", sizeof("status")) == 0)
 		{
 			getStatus();
 		}
 
 		// If Built in exit Command
-		else if (strncmp(newCommand->command, "exit", sizeof("exit")) == 0)
+		else if (strncmp(newCommand->commandArgs[0], "exit", sizeof("exit")) == 0)
 		{
 			prepareExit();
 			break;

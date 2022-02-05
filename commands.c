@@ -24,6 +24,32 @@ void initializeCommand(command* currCommand)
 	currCommand->numArgs = 0;
 }
 
+/*
+* void parseVariables(command* currCommand);
+* Description:
+*
+* Parameters:
+*
+* Returns:
+* Sources:
+*/
+void parseVariables(command* currCommand)
+{
+	printf("parse vars\n");
+	//char* saveptr;
+	//char* currValue = strtok_r(input, " ", &saveptr);
+	//currCommand->commandArgs[i] = calloc(strlen(currValue) + 1, sizeof(char));
+	//strcpy(currCommand->commandArgs[i], currValue);
+
+	//if (strncmp(currValue, "$$", sizeof("$$")) == 0)
+	//{
+	//	pid_t thisPid = getpid();
+	//	currCommand->commandArgs[i] = calloc(15, sizeof(char));
+	//	size_t bufferSize = sizeof(currCommand->commandArgs[i]);
+	//	snprintf(currCommand->commandArgs[i], bufferSize, "%d", thisPid);
+	//}
+
+}
 
 /*
 * void createCommand(command* currCommand);
@@ -50,16 +76,15 @@ command* createCommand(char* input)
 	// If Invalid Make Command Null and Return
 	if (currValue[0] == '\n' || currValue[0] == '#')
 	{
-		currCommand->command = NULL;
 		return currCommand;
 	}
 
 	// Remove New Line Character
 	currValue[strcspn(currValue, "\n")] = '\0';
 
-	// Add Valid Command Term
-	currCommand->command = calloc(strlen(currValue) + 1, sizeof(char));
-	strcpy(currCommand->command, currValue);
+	// Add Valid Command Term as First Arg
+	// DELETE currCommand->command = calloc(strlen(currValue) + 1, sizeof(char));
+	// DELETE strcpy(currCommand->command, currValue);
 	currCommand->commandArgs[i] = calloc(strlen(currValue) + 1, sizeof(char));
 	strcpy(currCommand->commandArgs[i], currValue);
 	i++;
@@ -89,19 +114,8 @@ command* createCommand(char* input)
 		// Add Command Arguments
 		else if (strncmp(currValue, "", sizeof("")) != 0)
 		{
-			// Add Process ID for $$
-			if (strncmp(currValue, "$$", sizeof("$$")) == 0)
-			{
-				pid_t thisPid = getpid();
-				currCommand->commandArgs[i] = calloc(15, sizeof(char));
-				size_t bufferSize = sizeof(currCommand->commandArgs[i]);
-				snprintf(currCommand->commandArgs[i], bufferSize, "%d", thisPid);
-			}
-			else
-			{
-				currCommand->commandArgs[i] = calloc(strlen(currValue) + 1, sizeof(char));
-				strcpy(currCommand->commandArgs[i], currValue);
-			}
+			currCommand->commandArgs[i] = calloc(strlen(currValue) + 1, sizeof(char));
+			strcpy(currCommand->commandArgs[i], currValue);
 			i++;
 		}
 
@@ -121,7 +135,12 @@ command* createCommand(char* input)
 	// Add Number of Arguments
 	currCommand->numArgs = i;
 
-	// DELETE TODO ADD CHECK FOR VARIABLES
+	// Parse Process ID Variable
+	parseVariables(currCommand);
+
+	// DELETE Add Command
+	// DELETE currCommand->command = calloc(strlen(currCommand->commandArgs[0]) + 1, sizeof(char));
+	// DELETE strcpy(currCommand->command, currCommand->commandArgs[0]);
 
 	return currCommand;
 }
@@ -131,7 +150,7 @@ void deconstructCommands(command* currCommand)
 	while (currCommand != NULL)
 	{
 		command* emptyCommand = currCommand;
-		free(currCommand->command);
+		// DELETE free(currCommand->command);
 		free(currCommand->inputFile);
 		free(currCommand->outputFile);
 
@@ -149,10 +168,10 @@ void deconstructCommands(command* currCommand)
 	
 }
 
-void printCommand(command* currCommand)
-{
-	printf("%s\n", currCommand->command);
-}
+// DELETE void printCommand(command* currCommand)
+// DELETE {
+// DELETE 	printf("%s\n", currCommand->command);
+// DELETE }
 
 void printCommandArgs(command* currCommand)
 {
@@ -186,7 +205,7 @@ void printNextCommand(command* currCommand)
 {
 	if (currCommand->nextCommand != NULL)
 	{
-		printf("%s\n", currCommand->nextCommand->command);
+		printf("%s\n", currCommand->nextCommand->commandArgs[0]);
 	}
 	else
 	{
@@ -197,7 +216,7 @@ void printNextCommand(command* currCommand)
 
 void printCommands(command* currCommand)
 {
-	printCommand(currCommand);
+	// DELETE printCommand(currCommand);
 	printCommandArgs(currCommand);
 	printInputFile(currCommand);
 	printOutputFile(currCommand);
