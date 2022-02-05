@@ -21,6 +21,7 @@ void initializeCommand(command* currCommand)
 	currCommand->inputFile = NULL;
 	currCommand->nextCommand = NULL;
 	currCommand->inBackground = false;
+	currCommand->numArgs = 0;
 }
 
 
@@ -59,6 +60,9 @@ command* createCommand(char* input)
 	// Add Valid Command Term
 	currCommand->command = calloc(strlen(currValue) + 1, sizeof(char));
 	strcpy(currCommand->command, currValue);
+	currCommand->commandArgs[i] = calloc(strlen(currValue) + 1, sizeof(char));
+	strcpy(currCommand->commandArgs[i], currValue);
+	i++;
 	currValue = strtok_r(NULL, " ", &saveptr);
 	
 	while (currValue != NULL)
@@ -109,10 +113,15 @@ command* createCommand(char* input)
 	// Add Background State
 	if (currCommand->commandArgs[i-1][0] == '&')
 	{
-		free(currCommand->commandArgs[i - 1]);
-		currCommand->commandArgs[i-1] = NULL;
+		// DELETE free(currCommand->commandArgs[i - 1]);
+		// DELETE currCommand->commandArgs[i-1] = NULL;
 		currCommand->inBackground = true;
 	}
+
+	// Add Number of Arguments
+	currCommand->numArgs = i;
+
+	// DELETE TODO ADD CHECK FOR VARIABLES
 
 	return currCommand;
 }

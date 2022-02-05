@@ -15,6 +15,7 @@ struct commands
 	char* inputFile;
 	char* outputFile;
 	bool inBackground;
+	int numArgs;
 	struct commands* nextCommand;
 
 };

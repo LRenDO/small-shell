@@ -29,7 +29,7 @@
 int runShell()
 {
 	printf("pid: %d\n", getpid()); //DELETE after comparing with $$ output
-	char* userInput;
+	char* userInput = NULL;
 	command* newCommand = NULL;
 	command* head = NULL;
 	command* tail = NULL;
