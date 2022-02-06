@@ -17,15 +17,15 @@ void initializeCommand(command* currCommand)
 {
 	size_t commArgSize = 513 * sizeof(currCommand->commandArgs[0]);
 	memset(currCommand->commandArgs, NULL, commArgSize);
-	// DELETE currCommand->outputFile = NULL;
-	// DELETE currCommand->inputFile = NULL;
+	currCommand->outputFile = NULL;
+	currCommand->inputFile = NULL;
 	currCommand->nextCommand = NULL;
 	currCommand->inBackground = false;
 	currCommand->numArgs = 0;
 }
 
 /*
-* void replaceVariables(command* currCommand);
+* void replaceArgVariables(command* currCommand);
 * Description:
 *
 * Parameters:
@@ -35,7 +35,7 @@ void initializeCommand(command* currCommand)
 *		   strstr() https://www.tutorialspoint.com/c_standard_library/c_function_strstr.htm
 *		   strncat() https://www.man7.org/linux/man-pages/man3/strcat.3.html
 */
-void replaceVariables(command* currCmd, int i)
+void replaceArgVariables(command* currCmd, int i)
 {
 	pid_t thisPid = getpid();
 	size_t pidStrSize = 15 * sizeof(char);
@@ -98,6 +98,153 @@ void replaceVariables(command* currCmd, int i)
 
 }
 
+/*
+* void replaceInputVariables(command* currCmd);
+* Description:
+*
+* Parameters:
+*
+* Returns:
+* Sources: realloc() https://www.geeksforgeeks.org/dynamic-memory-allocation-in-c-using-malloc-calloc-free-and-realloc/
+*		   strstr() https://www.tutorialspoint.com/c_standard_library/c_function_strstr.htm
+*		   strncat() https://www.man7.org/linux/man-pages/man3/strcat.3.html
+*/
+void replaceInputVariables(command* currCmd)
+{
+	pid_t thisPid = getpid();
+	size_t pidStrSize = 15 * sizeof(char);
+	size_t argSize = sizeof(currCmd->inputFile);
+	size_t bufferSize = pidStrSize + argSize;
+	char* pidStr;
+	char* argCopy;
+	char* substringPtr;
+
+	// Create Process ID String
+	pidStr = calloc(15, sizeof(char));
+	snprintf(pidStr, pidStrSize, "%d", thisPid);
+
+	// Make a Copy of Arg
+	argCopy = calloc(strlen(currCmd->inputFile) + 1, sizeof(char));
+	strcpy(argCopy, currCmd->inputFile);
+
+	// Find First Variable
+	substringPtr = strstr(argCopy, "$$");
+	if (substringPtr != NULL)
+	{
+		memset(currCmd->inputFile, '\0', strlen(currCmd->inputFile));
+	}
+
+
+	// Find Remaining Variables 
+	while (substringPtr != NULL)
+	{
+		// Resize currCmd->inputFile
+		bufferSize = bufferSize + pidStrSize;
+		currCmd->inputFile = realloc(currCmd->inputFile, bufferSize);
+
+		// Save Ending and Replace Position of First $ With Null Terminator
+		char* ending = &substringPtr[2];
+		substringPtr[0] = '\0';
+
+		// Create String From Prefix and Process ID
+		if (argCopy[0] != '\0')
+		{
+			strncat(currCmd->inputFile, argCopy, strlen(argCopy));
+		}
+		strncat(currCmd->inputFile, pidStr, strlen(pidStr));
+
+		// Check Remaining Characters for Variable and Mark Next Variable
+		substringPtr = strstr(ending, "$$");
+		if (substringPtr != NULL)
+		{
+			substringPtr[0] = '\0';
+		}
+
+		if (ending[0] != '\0')
+		{
+			strncat(currCmd->inputFile, ending, strlen(ending));
+		}
+
+	}
+
+	free(argCopy);
+	free(pidStr);
+
+}
+
+/*
+* void replaceInputVariables(command* currCmd);
+* Description:
+*
+* Parameters:
+*
+* Returns:
+* Sources: realloc() https://www.geeksforgeeks.org/dynamic-memory-allocation-in-c-using-malloc-calloc-free-and-realloc/
+*		   strstr() https://www.tutorialspoint.com/c_standard_library/c_function_strstr.htm
+*		   strncat() https://www.man7.org/linux/man-pages/man3/strcat.3.html
+*/
+void replaceOutputVariables(command* currCmd)
+{
+	pid_t thisPid = getpid();
+	size_t pidStrSize = 15 * sizeof(char);
+	size_t argSize = sizeof(currCmd->outputFile);
+	size_t bufferSize = pidStrSize + argSize;
+	char* pidStr;
+	char* argCopy;
+	char* substringPtr;
+
+	// Create Process ID String
+	pidStr = calloc(15, sizeof(char));
+	snprintf(pidStr, pidStrSize, "%d", thisPid);
+
+	// Make a Copy of Arg
+	argCopy = calloc(strlen(currCmd->outputFile) + 1, sizeof(char));
+	strcpy(argCopy, currCmd->outputFile);
+
+	// Find First Variable
+	substringPtr = strstr(argCopy, "$$");
+	if (substringPtr != NULL)
+	{
+		memset(currCmd->outputFile, '\0', strlen(currCmd->outputFile));
+	}
+
+
+	// Find Remaining Variables 
+	while (substringPtr != NULL)
+	{
+		// Resize currCmd->outputFile
+		bufferSize = bufferSize + pidStrSize;
+		currCmd->outputFile = realloc(currCmd->outputFile, bufferSize);
+
+		// Save Ending and Replace Position of First $ With Null Terminator
+		char* ending = &substringPtr[2];
+		substringPtr[0] = '\0';
+
+		// Create String From Prefix and Process ID
+		if (argCopy[0] != '\0')
+		{
+			strncat(currCmd->outputFile, argCopy, strlen(argCopy));
+		}
+		strncat(currCmd->outputFile, pidStr, strlen(pidStr));
+
+		// Check Remaining Characters for Variable and Mark Next Variable
+		substringPtr = strstr(ending, "$$");
+		if (substringPtr != NULL)
+		{
+			substringPtr[0] = '\0';
+		}
+
+		if (ending[0] != '\0')
+		{
+			strncat(currCmd->outputFile, ending, strlen(ending));
+		}
+
+	}
+
+	free(argCopy);
+	free(pidStr);
+
+}
 
 /*
 * void parseVariables(command* currCommand);
@@ -117,22 +264,22 @@ void parseVariables(command* currCommand)
 	// Check each argument
 	while (currCommand->commandArgs[i] != NULL)
 	{
-		replaceVariables(currCommand, i);
+		replaceArgVariables(currCommand, i);
 		// DELETE replaceVariables(currCommand->commandArgs[i]);
 		i++;
 	}
 
-	/* DELETE block// Update Input File
+	// Update Input File
 	if (currCommand->inputFile != NULL)
 	{
-		replaceVariables(currCommand->inputFile);
+		replaceInputVariables(currCommand);
 	}
 
 	// Update Output File
 	if (currCommand->outputFile != NULL)
 	{
-		replaceVariables(currCommand->outputFile);
-	}*/
+		replaceOutputVariables(currCommand);
+	}
 	
 }
 
@@ -180,34 +327,26 @@ command* createCommand(char* input)
 		// Remove New Line Character
 		currValue[strcspn(currValue, "\n")] = '\0';
 
-		/*// DELETE??? Add Input File
+		// Add Input File
 		if (strncmp(currValue, "<", sizeof("<")) == 0)
 		{
-			currCommand->commandArgs[i] = calloc(strlen(currValue) + 1, sizeof(char));
-			strcpy(currCommand->commandArgs[i], currValue);
-			i++;
-
 			currValue = strtok_r(NULL, " ", &saveptr);
 			currValue[strcspn(currValue, "\n")] = '\0';
 			currCommand->inputFile = calloc(strlen(currValue) + 1, sizeof(char));
 			strcpy(currCommand->inputFile, currValue);
 		}
 
-		// DELETE??? Add Output File
+		// Add Output File
 		else if (strncmp(currValue, ">", sizeof(">")) == 0)
 		{
-			currCommand->commandArgs[i] = calloc(strlen(currValue) + 1, sizeof(char));
-			strcpy(currCommand->commandArgs[i], currValue);
-			i++;
-
 			currValue = strtok_r(NULL, " ", &saveptr);
 			currValue[strcspn(currValue, "\n")] = '\0';
 			currCommand->outputFile = calloc(strlen(currValue) + 1, sizeof(char));
 			strcpy(currCommand->outputFile, currValue);
-		}*/
+		}
 		
 		// Add Command Arguments
-		if (strncmp(currValue, "", sizeof("")) != 0)
+		else if (strncmp(currValue, "", sizeof("")) != 0)
 		{
 			currCommand->commandArgs[i] = calloc(strlen(currValue) + 1, sizeof(char));
 			strcpy(currCommand->commandArgs[i], currValue);
@@ -222,8 +361,8 @@ command* createCommand(char* input)
 	// Add Background State
 	if (currCommand->commandArgs[i-1][0] == '&')
 	{
-		// DELETE free(currCommand->commandArgs[i - 1]);
-		// DELETE currCommand->commandArgs[i-1] = NULL;
+		free(currCommand->commandArgs[i - 1]);
+		currCommand->commandArgs[i-1] = NULL;
 		currCommand->inBackground = true;
 	}
 
@@ -247,8 +386,8 @@ void deconstructCommands(command* currCommand)
 	{
 		command* emptyCommand = currCommand;
 		// DELETE free(currCommand->command);
-		// DELETE free(currCommand->inputFile);
-		// DELETE free(currCommand->outputFile);
+		free(currCommand->inputFile);
+		free(currCommand->outputFile);
 
 		for (int i = 0; i < 513; i++)
 		{
@@ -282,7 +421,6 @@ void printCommandArgs(command* currCommand)
 	printf("\n");
 }
 
-/* DELETE
 void printInputFile(command* currCommand)
 {
 	printf("%s\n", currCommand->inputFile);
@@ -292,7 +430,7 @@ void printOutputFile(command* currCommand)
 {
 	printf("%s\n", currCommand->outputFile);
 }
-*/
+
 
 void printInBackground(command* currCommand)
 {
@@ -319,11 +457,20 @@ void printNextCommand(command* currCommand)
 
 void printCommands(command* currCommand)
 {
+	printf("\n\n");
+	printf("------------\n");
 	// DELETE printCommand(currCommand);
 	printCommandArgs(currCommand);
-	// DELETE printInputFile(currCommand);
-	// DELETE printOutputFile(currCommand);
+	if (currCommand->inputFile != NULL)
+	{
+		printInputFile(currCommand);
+	}
+	if (currCommand->outputFile != NULL)
+	{
+		printOutputFile(currCommand);
+	}
 	printInBackground(currCommand);
 	printNumArgs(currCommand);
 	printNextCommand(currCommand);
+	printf("------------\n\n");
 }

@@ -12,8 +12,8 @@ struct commands
 {
 	// DELETE char* command;
 	char* commandArgs[513];
-	// DELETE char* inputFile;
-	// DELETE char* outputFile;
+	char* inputFile;
+	char* outputFile;
 	bool inBackground;
 	int numArgs;
 	struct commands* nextCommand;
@@ -23,15 +23,17 @@ struct commands
 typedef struct commands command;
 
 void initializeCommand(command* currCommand);
-void replaceVariables(command* currCommand, int i);
+void replaceArgVariables(command* currCmd, int i);
+void replaceInputVariables(command* currCmd);
+void replaceOutputVariables(command* currCmd);
 void parseVariables(command* currCommand);
 command* createCommand(char* input);
 void deconstructCommands(command* currCommand);
 
 // DELETE void printCommand(command* currCommand);
 void printCommandArgs(command* currCommand);
-// DELETE void printInputFile(command* currCommand);
-// DELETE void printOutputFile(command* currCommand);
+void printInputFile(command* currCommand);
+void printOutputFile(command* currCommand);
 void printInBackground(command* currCommand);
 void printNumArgs(command* currCommand);
 void printNextCommand(command* currCommand);
