@@ -56,12 +56,19 @@ void changeDirectory(command* currCommand)
 	// DELETE printf("%s\n", direct);
 }
 
-void getStatus() 
+void printStatus(int status) 
 {
 	// If No Foreground Processes Exit Status 0
-	// Else If Signal Return Signal
-	// Else If Exit Status Return Exit Status
-	printf("status\n");
+	if (status == 0 || status == 1)
+	{
+		printf("exit value %d\n", status);
+		fflush(stdout);
+	}
+	else
+	{
+		printf("terminated by signal %d\n", status);
+		fflush(stdout);
+	}
 }
 
 void prepareExit()

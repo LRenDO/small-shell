@@ -10,7 +10,7 @@
 #include "commands.h"
 
 void changeDirectory(command* currCommand);
-void getStatus();
+void printStatus(int status);
 void prepareExit();
 
 #endif
