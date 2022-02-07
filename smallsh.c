@@ -69,7 +69,7 @@ int runShell()
 
 	do
 	{
-		
+
 		printf(": ");
 		fflush(stdout);
 
@@ -126,7 +126,7 @@ int runShell()
 		else if (strncmp(newCommand->commandArgs[0], "exit", sizeof("exit")) == 0)
 		{
 			// Terminate any remaining processes
-			prepareExit(backgroundPid);
+			prepareExit(backgroundPid, head, userInput);
 			break;
 		}
 
@@ -135,7 +135,6 @@ int runShell()
 		// Source: Else clause adapted from https://canvas.oregonstate.edu/courses/1884946/pages/exploration-process-api-monitoring-child-processes?module_item_id=21835973
 		else
 		{
-			printf("Parent process's pid = %d\n", getpid());
 
 			int   childStatus;
 			pid_t childPid = fork();
@@ -146,8 +145,7 @@ int runShell()
 			}
 			// This is child
 			else if (childPid == 0) {
-
-				printf("\nChild process's pid = %d\n", getpid()); // DELETE
+				
 				// Set Signal handlers for Children to Ignore SIGSTP
 				sigaction(SIGTSTP, &ignore_action, &switchMode_SIGTSTP);
 
@@ -159,14 +157,16 @@ int runShell()
 				// If Running in Background Redirect stdin and stdout to /dev/null
 				else
 				{
+					printf("Background pid is %d\n", getpid());
+					fflush(stdout);
 					char* devNull = "/dev/null";
 					if (newCommand->inputFile == NULL)
 					{
 						
-						sleep(15);  // DELETE
-						int inputFd = open(devNull, O_RDONLY);
-						if (inputFd == -1) {
-							printf("Cannot open %s for input", devNull);
+						// DELETE sleep(15); 
+						int toNullFd = open(devNull, O_RDONLY);
+						if (toNullFd == -1) {
+							printf("Cannot open \"%s\" for input", devNull);
 							fflush(stdout);
 							perror("");
 							fflush(stderr);
@@ -174,7 +174,7 @@ int runShell()
 						}
 
 						// Redirect stdin to Input File
-						int result = dup2(inputFd, 0);
+						int result = dup2(toNullFd, 0);
 						if (result == -1) {
 							perror("Input File Redirect Error");
 							exit(EXIT_FAILURE);
@@ -184,16 +184,16 @@ int runShell()
 					if (newCommand->outputFile == NULL)
 					{
 						// Open Output File
-						int outputFd = open(devNull, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-						if (outputFd == -1) {
-							printf("Cannot open %s for output", devNull);
+						int fromNullfd = open(devNull, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+						if (fromNullfd == -1) {
+							printf("Cannot open \"%s\" for output", devNull);
 							fflush(stdout);
 							perror("");
 							exit(EXIT_FAILURE);
 						}
 
 						// Redirect stdout to Output File
-						int result = dup2(outputFd, 1);
+						int result = dup2(fromNullfd, 1);
 						if (result == -1) {
 							perror("Output File Redirect Error");
 							exit(EXIT_FAILURE);
@@ -204,13 +204,11 @@ int runShell()
 				//Source: https://canvas.oregonstate.edu/courses/1884946/pages/exploration-processes-and-i-slash-o?module_item_id=21835982
 				if (newCommand->inputFile != NULL)
 				{
-					printf("do input stuff\n"); // DELETE
 					int inputFd = open(newCommand->inputFile, O_RDONLY);
 					if (inputFd == -1) {
-						printf("Cannot open %s for input", newCommand->inputFile);
+						printf("Cannot open \"%s\" for input: ", newCommand->inputFile);
 						fflush(stdout);
 						perror("");
-						fflush(stderr);
 						exit(EXIT_FAILURE);
 					}
 
@@ -226,33 +224,31 @@ int runShell()
 
 				if (newCommand->outputFile != NULL)
 				{
-					printf("do output stuff\n"); // DELETE
 					// Open Output File
 					int outputFd = open(newCommand->outputFile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 					if (outputFd == -1) {
-						printf("Cannot open %s for output", newCommand->inputFile);
+						printf("Cannot open \"%s\" for output: ", newCommand->inputFile);
 						fflush(stdout);
 						perror("");
-						exit(EXIT_FAILURE);
+						exit(1);
 					}
 
 					// Redirect stdout to Output File
 					int result = dup2(outputFd, 1);
 					if (result == -1) {
 						perror("Output File Redirect Error");
-						exit(EXIT_FAILURE);
+						exit(1);
 					}
 				}
-				sleep(3); // DELETE
+				// DELETE sleep(3);
 				execvp(newCommand->commandArgs[0], newCommand->commandArgs);
 				perror("Execute Error");
-				fflush(stderr);
-				exit(EXIT_FAILURE);
+				exit(1);
 			}
 			// This is Parent
 			else {
 				// The parent process executes this branch
-				printf("In parent Child's pid = %d\n", childPid);
+				// DELETE printf("Child pid: %d\n", childPid);
 
 				// Run in Background
 				if (!foregroundOnly && newCommand->inBackground)
@@ -260,7 +256,7 @@ int runShell()
 					backgroundPid[count] = childPid;
 					count++;
 					childPid = waitpid(childPid, &childStatus, WNOHANG);
-					printf("In the parent process waiting on background waitpid returned value %d\n", childPid);
+					// DELETE printf("In the parent process waiting on background waitpid returned value %d\n", childPid);
 				}
 				// Run in Foreground
 				else
@@ -273,12 +269,13 @@ int runShell()
 
 					if (WIFSIGNALED(childStatus))
 					{
+						// DELETE printf("Foreground PID %d terminated by signal %d\n", childPid, WTERMSIG(childStatus));
 						printf("Foreground PID %d terminated by signal %d\n", childPid, WTERMSIG(childStatus));
 						lastFgJobStatus = WTERMSIG(childStatus);
 					}
 					else if (WIFEXITED(childStatus)) {
-						printf("Foreground PID %d exited normally with status %d\n", childPid, WEXITSTATUS(childStatus)); // DELETE
-						lastFgJobStatus = WTERMSIG(childStatus);
+						// printf("Foreground PID %d exited normally with status %d\n", childPid, WEXITSTATUS(childStatus)); // DELETE
+						lastFgJobStatus = WEXITSTATUS(childStatus);
 					}
 
 					// Update Last Foreground JobPID
@@ -293,17 +290,18 @@ int runShell()
 					if (childPid < 0)
 					{
 						perror("Error checking for background process status");
-						fflush(stderr);
 
 					}
 					else if (childPid > 0)
 					{
 						if (WIFSIGNALED(childStatus))
 						{
-							printf("Background PID %d terminated by signal %d\n", childPid, WTERMSIG(childStatus));
+							printf("Background PID %d is done: terminated by signal %d\n", childPid, WTERMSIG(childStatus));
+							fflush(stdout);
 						}
 						else if (WIFEXITED(childStatus)) {
-							printf("Background PID %d exited normally with status %d\n", childPid, WEXITSTATUS(childStatus)); // DELETE
+							printf("Background PID %d is done: exit value %d\n", childPid, WEXITSTATUS(childStatus));
+							fflush(stdout);
 						}
 
 						// Remove PID from Background List
@@ -324,14 +322,10 @@ int runShell()
 
 
 			}
-			printf("The process with pid %d is returning to loop\n", getpid());
 			
 		}
 
 	} while (true);
 	
-	free(userInput);
-	deconstructCommands(head);
-
 	return 0;
 }

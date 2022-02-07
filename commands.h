@@ -27,6 +27,7 @@ void replaceArgVariables(command* currCmd, int i);
 void replaceInputVariables(command* currCmd);
 void replaceOutputVariables(command* currCmd);
 void parseVariables(command* currCommand);
+bool isBuiltIn(char* input);
 command* createCommand(char* input);
 void deconstructCommands(command* currCommand);
 

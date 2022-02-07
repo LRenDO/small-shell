@@ -282,7 +282,37 @@ void parseVariables(command* currCommand)
 	}
 	
 }
+/*
+* bool isBuiltIn(char * input);
+* Description:
+*
+* Parameters:
+*
+* Returns:
+* Sources: 
+*/
+bool isBuiltIn(char * input)
+{
+	bool builtIn = false;
 
+	if (strncmp(input, "cd", strlen(input)) == 0)
+	{
+		builtIn = true;
+	}
+
+	if (strncmp(input, "status", strlen(input)) == 0)
+	{
+		builtIn = true;
+	}
+
+	if (strncmp(input, "exit", strlen(input)) == 0)
+	{
+		builtIn = true;
+	}
+
+	return builtIn;
+	
+}
 /*
 * void createCommand(command* currCommand);
 * Description:
@@ -323,6 +353,7 @@ command* createCommand(char* input)
 	
 	while (currValue != NULL)
 	{	
+
 		// Remove New Line Character
 		currValue[strcspn(currValue, "\n")] = '\0';
 
@@ -357,12 +388,20 @@ command* createCommand(char* input)
 
 	}
 
+	bool hasBgFlag = strcmp(currCommand->commandArgs[i - 1], "&") == 0;
+	bool builtIn = isBuiltIn(currCommand->commandArgs[0]);
 	// Add Background State
-	if (currCommand->commandArgs[i-1][0] == '&')
+	if (hasBgFlag)
 	{
 		free(currCommand->commandArgs[i - 1]);
 		currCommand->commandArgs[i-1] = NULL;
 		currCommand->inBackground = true;
+	}
+	// Remove Background State for Built in Functions
+	else if(hasBgFlag && builtIn)
+	{
+		free(currCommand->commandArgs[i - 1]);
+		currCommand->commandArgs[i - 1] = NULL;
 	}
 
 	// Add Number of Arguments
@@ -374,7 +413,7 @@ command* createCommand(char* input)
 	// DELETE Add Command
 	// DELETE currCommand->command = calloc(strlen(currCommand->commandArgs[0]) + 1, sizeof(char));
 	// DELETE strcpy(currCommand->command, currCommand->commandArgs[0]);
-	printCommands(currCommand); // DELETE
+	// DELETE printCommands(currCommand); 
 
 	return currCommand;
 }

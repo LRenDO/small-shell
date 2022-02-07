@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <signal.h>
 #include <errno.h>
@@ -52,7 +53,7 @@ void changeDirectory(command* currCommand)
 }
 
 /*
-* void changeDirectory(command* currCommand);
+* void printStatus(int status);
 * Description:
 *
 * Parameters:
@@ -76,7 +77,7 @@ void printStatus(int status)
 }
 
 /*
-* void prepareExit(pid_t pidArray[]);
+* void prepareExit(pid_t pidArray[100], command* head, char * userInput);
 * Description:
 *
 * Parameters:
@@ -84,7 +85,7 @@ void printStatus(int status)
 * Returns:
 * Sources: https://softwareengineering.stackexchange.com/questions/281880/best-way-to-signal-all-child-processes-to-terminate-using-c
 */
-void prepareExit(pid_t pidArray[100])
+void prepareExit(pid_t pidArray[100], command* head, char * userInput)
 {
 	int i = 0;
 	int childStatus;
@@ -92,18 +93,28 @@ void prepareExit(pid_t pidArray[100])
 
 	// Terminate Remaining Processes
 	while (pidArray[i] != 0 && i < 100) {
-		printf("Kill Child Process %d\n", pidArray[i]);  // Delete
 		if (kill(pidArray[i], SIGTERM) == -1 && errno != ESRCH) 
 		{			
 			exit(EXIT_FAILURE);
 		}
-		childPid = waitpid(pidArray[i], &childStatus, 0) > 0;
-		printf("Child Process %d on status %d\n", pidArray[i], WTERMSIG(childStatus));  // Delete
+		childPid = waitpid(pidArray[i], &childStatus, 0);
+
+		if (WIFSIGNALED(childStatus))
+		{
+			printf("Background PID %d is done: terminated by signal %d\n", childPid, WTERMSIG(childStatus));
+			fflush(stdout);
+		}
+		else if (WIFEXITED(childStatus)) {
+			printf("Background PID %d is done: exit value %d\n", childPid, WEXITSTATUS(childStatus));
+			fflush(stdout);
+		}
+
 		i++;
 	}
 
+	free(userInput);
+	deconstructCommands(head);
 	
-		
+	exit(EXIT_SUCCESS);
 
-	printf("exit preparation complete\n");  // Delete
 }

@@ -12,6 +12,6 @@
 
 void changeDirectory(command* currCommand);
 void printStatus(int status);
-void prepareExit(pid_t pidArray[]);
+void prepareExit(pid_t pidArray[100], command* head, char* userInput);
 
 #endif
