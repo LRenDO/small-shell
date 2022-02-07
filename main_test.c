@@ -4,6 +4,7 @@
 * Description: Test statements for smallsh project
 * Sources:
 */
+#include <signal.h>
 #include "smallsh.h"
 
 int main() 

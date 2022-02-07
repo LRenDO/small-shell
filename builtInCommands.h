@@ -7,10 +7,11 @@
 
 #ifndef builtInCommands_H
 #define builtInCommands_H
+#include <sys/types.h>
 #include "commands.h"
 
 void changeDirectory(command* currCommand);
 void printStatus(int status);
-void prepareExit();
+void prepareExit(pid_t pidArray[]);
 
 #endif

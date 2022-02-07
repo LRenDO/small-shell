@@ -11,9 +11,12 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <signal.h>
+#include <fcntl.h>
 #include "smallsh.h"
 #include "commands.h"
 #include "builtInCommands.h"
+#include "signalHandlers.h"
 
 
 /* int runShell()
@@ -32,19 +35,38 @@ int runShell()
 {
 	printf("pid: %d\n", getpid()); //DELETE after comparing with $$ output
 	char* userInput = NULL;
-	int lastFgJobStatus = 0;
-	pid_t lastFgJobPid = 0;
-	pid_t backgroundPid[100];
-	for(int i=0; i<100; i++)
-	{
-		backgroundPid[i] = -1;
-	}
 	int count = 0;
 	command* newCommand = NULL;
 	command* head = NULL;
 	command* tail = NULL;
 	size_t bufferSize = 0;
 	int numChar = 0;
+	foregroundOnly = 0;
+	int lastFgJobStatus = 0;
+	pid_t lastFgJobPid = 0;
+	pid_t backgroundPid[100];
+	for (int i = 0; i < 100; i++)
+	{
+		backgroundPid[i] = 0;
+	}
+
+	// Set Parent Handlers
+	// Source: https://canvas.oregonstate.edu/courses/1884946/pages/exploration-signal-handling-api?module_item_id=21835981
+	struct sigaction ignore_action = { { 0 } }, switchMode_SIGTSTP = { { 0 } }, default_action = {{ 0 }};
+	default_action.sa_handler = SIG_DFL;
+
+	// Parent Ignores SIGINT (CTRL C)
+	ignore_action.sa_handler = SIG_IGN;
+	sigaction(SIGINT, &ignore_action, NULL);
+	// DELETE sigaction(SIGTSTP, &ignore_action, NULL);
+
+	// SIGTSTP (CTRL Z) Signal Handler for Foreground Only Mode to Toggle On and Off
+	switchMode_SIGTSTP.sa_handler = changeModeOnSIGTSTP;
+	sigfillset(&switchMode_SIGTSTP.sa_mask);
+	switchMode_SIGTSTP.sa_flags = 0; // DELTE SA_RESTART
+	sigaction(SIGTSTP, &switchMode_SIGTSTP, NULL);
+
+
 
 	do
 	{
@@ -53,8 +75,20 @@ int runShell()
 		fflush(stdout);
 
 		numChar = getline(&userInput, &bufferSize, stdin);
-		if (numChar < 1)
+
+		// Source: https://edstem.org/us/courses/16718/discussion/1065019
+		if(ferror(stdin))
 		{
+			// DELETE perror("Getline Error");
+			clearerr(stdin);
+			continue;
+		}
+
+		if (strlen(userInput) < 1)
+		{
+			perror("numChar Getline");
+			printf("NUMCHAR %d\n", numChar);
+			printf("NUMCHAR %s\n", userInput);
 			continue;
 		}
 
@@ -93,10 +127,11 @@ int runShell()
 		else if (strncmp(newCommand->commandArgs[0], "exit", sizeof("exit")) == 0)
 		{
 			// Terminate any remaining processes
-			prepareExit();
+			prepareExit(backgroundPid);
 			break;
 		}
 
+		// DELETE If time refactor to split process
 		// Else Pass Command and Args to Exec or Process Input/Output
 		// Source: Else clause adapted from https://canvas.oregonstate.edu/courses/1884946/pages/exploration-process-api-monitoring-child-processes?module_item_id=21835973
 		else
@@ -113,21 +148,66 @@ int runShell()
 			// This is child
 			else if (childPid == 0) {
 
-				printf("Child process's pid = %d\n", getpid());
+				printf("Child process's pid = %d\n", getpid()); // DELETE
+				// Set Signal handlers for Children to Ignore SIGSTP
+				sigaction(SIGTSTP, &ignore_action, &switchMode_SIGTSTP);
+
+				// If Running in Foreground Set SIGINT to Terminate Process
+				if (foregroundOnly || !newCommand->inBackground)
+				{
+					sigaction(SIGINT, &default_action, &ignore_action);
+				}
+				else // DELETE CLAUSE
+				{
+					sleep(15);  // DELETE
+				}
 				
+				//Source: https://canvas.oregonstate.edu/courses/1884946/pages/exploration-processes-and-i-slash-o?module_item_id=21835982
 				if (newCommand->inputFile != NULL)
 				{
-					printf("do input stuff\n");
+					printf("do input stuff\n"); // DELETE
+					int inputFd = open(newCommand->inputFile, O_RDONLY);
+					if (inputFd == -1) {
+						printf("Cannot open %s for input", newCommand->inputFile);
+						fflush(stdout);
+						perror("");
+						fflush(stderr);
+						exit(EXIT_FAILURE);
+					}
+
+					// Redirect stdin to Input File
+					int result = dup2(inputFd, 0);
+					if (result == -1) {
+						perror("Input File Redirect Error");
+						exit(EXIT_FAILURE);
+					}
+
+					
 				}
 
 				if (newCommand->outputFile != NULL)
 				{
 					printf("do output stuff\n"); // DELETE
-				}
+					// Open target file
+					int outputFd = open(newCommand->outputFile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+					if (outputFd == -1) {
+						printf("Cannot open %s for output", newCommand->inputFile);
+						fflush(stdout);
+						perror("");
+						exit(EXIT_FAILURE);
+					}
 
-				sleep(15);  // DELETE
+					// Redirect stdout to target file
+					int result = dup2(outputFd, 1);
+					if (result == -1) {
+						perror("Output File Redirect Error");
+						exit(EXIT_FAILURE);
+					}
+				}
+				sleep(3); // DELETE
 				execvp(newCommand->commandArgs[0], newCommand->commandArgs);
 				perror("Execute Error");
+				fflush(stderr);
 				exit(EXIT_FAILURE);
 			}
 			// This is Parent
@@ -135,28 +215,35 @@ int runShell()
 				// The parent process executes this branch
 				printf("In parent Child's pid = %d\n", childPid);
 
-				// If Running in Background
-				if (newCommand->inBackground)
+				// Run in Background
+				if (!foregroundOnly && newCommand->inBackground)
 				{
 					backgroundPid[count] = childPid;
 					count++;
 					childPid = waitpid(childPid, &childStatus, WNOHANG);
 					printf("In the parent process waiting on background waitpid returned value %d\n", childPid);
 				}
+				// Run in Foreground
 				else
 				{
 					childPid = waitpid(childPid, &childStatus, 0);
-
-					if (WIFEXITED(childStatus)) {
-						printf("Child %d exited normally with status %d\n", childPid, WEXITSTATUS(childStatus));
-					}
-					else {
-						printf("Child %d exited abnormally due to signal %d\n", childPid, WTERMSIG(childStatus));
+					while (childPid < 1)
+					{
+						childPid = waitpid(childPid, &childStatus, 0);
 					}
 
-					// Update Last Foreground Job Status and PID
+					if (WIFSIGNALED(childStatus))
+					{
+						printf("Foreground PID %d terminated by signal %d\n", childPid, WTERMSIG(childStatus));
+						lastFgJobStatus = WTERMSIG(childStatus);
+					}
+					else if (WIFEXITED(childStatus)) {
+						printf("Foreground PID %d exited normally with status %d\n", childPid, WEXITSTATUS(childStatus)); // DELETE
+						lastFgJobStatus = WTERMSIG(childStatus);
+					}
+
+					// Update Last Foreground JobPID
 					lastFgJobPid = childPid;
-					lastFgJobStatus = childStatus;
 				}
 
 				int i = 0;
@@ -172,13 +259,12 @@ int runShell()
 					}
 					else if (childPid > 0)
 					{
-						if (WIFEXITED(childStatus))
+						if (WIFSIGNALED(childStatus))
 						{
-							printf("Background Child %d exited normally with status %d\n", childPid, WEXITSTATUS(childStatus));
+							printf("Background PID %d terminated by signal %d\n", childPid, WTERMSIG(childStatus));
 						}
-						else
-						{
-							printf("Background Child %d exited abnormally due to signal %d\n", childPid, WTERMSIG(childStatus));
+						else if (WIFEXITED(childStatus)) {
+							printf("Background PID %d exited normally with status %d\n", childPid, WEXITSTATUS(childStatus)); // DELETE
 						}
 
 						// Remove PID from Background List
@@ -190,7 +276,7 @@ int runShell()
 						else
 						{
 							count--;
-							backgroundPid[count] = -1;
+							backgroundPid[count] = 0;
 						}
 						
 					}

@@ -37,6 +37,7 @@ MAIN = main.c
 SRCS = smallsh.c
 SRCS += commands.c
 SRCS += builtInCommands.c
+SRCS += signalHandlers.c
 
 #---------------#
 # Header  Files #
@@ -44,6 +45,7 @@ SRCS += builtInCommands.c
 HDRS = smallsh.h
 HDRS += commands.h
 HDRS += builtInCommands.h
+HDRS += signalHandlers.h
 
 #---------------#
 # Test  Files   #

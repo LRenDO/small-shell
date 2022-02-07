@@ -11,6 +11,8 @@
 #include <stdbool.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <signal.h>
+#include <errno.h>
 #include "commands.h"
 #include "builtInCommands.h"
 
@@ -25,10 +27,6 @@
 */
 void changeDirectory(command* currCommand)
 {
-	// DELETE printf("cd\n");
-	// DELETE char direct[256];
-	// DELETE getcwd(direct, sizeof(direct));
-	// DELETE printf("%s\n", direct);
 
 	// If No Arguments Go To Home Directory
 	// Source: https://stackoverflow.com/questions/9493234/chdir-to-home-directory
@@ -51,11 +49,17 @@ void changeDirectory(command* currCommand)
 		
 	}
 
-	// DELETE memset(direct, NULL, sizeof(direct));
-	// DELETE getcwd(direct, sizeof(direct));
-	// DELETE printf("%s\n", direct);
 }
 
+/*
+* void changeDirectory(command* currCommand);
+* Description:
+*
+* Parameters:
+*
+* Returns:
+* Sources: chdir() https://man7.org/linux/man-pages/man2/chdir.2.html
+*/
 void printStatus(int status) 
 {
 	// If No Foreground Processes Exit Status 0
@@ -71,9 +75,35 @@ void printStatus(int status)
 	}
 }
 
-void prepareExit()
+/*
+* void prepareExit(pid_t pidArray[]);
+* Description:
+*
+* Parameters:
+*
+* Returns:
+* Sources: https://softwareengineering.stackexchange.com/questions/281880/best-way-to-signal-all-child-processes-to-terminate-using-c
+*/
+void prepareExit(pid_t pidArray[100])
 {
-	// Kill All Processes Started
+	int i = 0;
+	int childStatus;
+	pid_t childPid;
 
-	printf("exit\n");
+	// Terminate Remaining Processes
+	while (pidArray[i] != 0 && i < 100) {
+		printf("Kill Child Process %d\n", pidArray[i]);  // Delete
+		if (kill(pidArray[i], SIGTERM) == -1 && errno != ESRCH) 
+		{			
+			exit(EXIT_FAILURE);
+		}
+		childPid = waitpid(pidArray[i], &childStatus, 0) > 0;
+		printf("Child Process %d on status %d\n", pidArray[i], WTERMSIG(childStatus));  // Delete
+		i++;
+	}
+
+	
+		
+
+	printf("exit preparation complete\n");  // Delete
 }
