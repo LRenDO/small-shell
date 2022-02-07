@@ -33,7 +33,6 @@
 
 int runShell()
 {
-	printf("pid: %d\n", getpid()); //DELETE after comparing with $$ output
 	char* userInput = NULL;
 	int count = 0;
 	command* newCommand = NULL;
@@ -148,7 +147,7 @@ int runShell()
 			// This is child
 			else if (childPid == 0) {
 
-				printf("Child process's pid = %d\n", getpid()); // DELETE
+				printf("\nChild process's pid = %d\n", getpid()); // DELETE
 				// Set Signal handlers for Children to Ignore SIGSTP
 				sigaction(SIGTSTP, &ignore_action, &switchMode_SIGTSTP);
 
@@ -157,9 +156,49 @@ int runShell()
 				{
 					sigaction(SIGINT, &default_action, &ignore_action);
 				}
-				else // DELETE CLAUSE
+				// If Running in Background Redirect stdin and stdout to /dev/null
+				else
 				{
-					sleep(15);  // DELETE
+					char* devNull = "/dev/null";
+					if (newCommand->inputFile == NULL)
+					{
+						
+						sleep(15);  // DELETE
+						int inputFd = open(devNull, O_RDONLY);
+						if (inputFd == -1) {
+							printf("Cannot open %s for input", devNull);
+							fflush(stdout);
+							perror("");
+							fflush(stderr);
+							exit(EXIT_FAILURE);
+						}
+
+						// Redirect stdin to Input File
+						int result = dup2(inputFd, 0);
+						if (result == -1) {
+							perror("Input File Redirect Error");
+							exit(EXIT_FAILURE);
+						}
+					}
+
+					if (newCommand->outputFile == NULL)
+					{
+						// Open Output File
+						int outputFd = open(devNull, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+						if (outputFd == -1) {
+							printf("Cannot open %s for output", devNull);
+							fflush(stdout);
+							perror("");
+							exit(EXIT_FAILURE);
+						}
+
+						// Redirect stdout to Output File
+						int result = dup2(outputFd, 1);
+						if (result == -1) {
+							perror("Output File Redirect Error");
+							exit(EXIT_FAILURE);
+						}
+					}
 				}
 				
 				//Source: https://canvas.oregonstate.edu/courses/1884946/pages/exploration-processes-and-i-slash-o?module_item_id=21835982
@@ -188,7 +227,7 @@ int runShell()
 				if (newCommand->outputFile != NULL)
 				{
 					printf("do output stuff\n"); // DELETE
-					// Open target file
+					// Open Output File
 					int outputFd = open(newCommand->outputFile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 					if (outputFd == -1) {
 						printf("Cannot open %s for output", newCommand->inputFile);
@@ -197,7 +236,7 @@ int runShell()
 						exit(EXIT_FAILURE);
 					}
 
-					// Redirect stdout to target file
+					// Redirect stdout to Output File
 					int result = dup2(outputFd, 1);
 					if (result == -1) {
 						perror("Output File Redirect Error");
