@@ -2,7 +2,6 @@
 * Author: Ren Demeis-Ortiz
 * Course: CS 344 Sec. 400
 * Description: Function definitions for DELETE functions
-* Sources:
 */
 #define _GNU_SOURCE
 #include <stdlib.h>
@@ -13,6 +12,14 @@
 #include <unistd.h>
 #include "commands.h"
 
+/*
+* void initializeCommand(command* currCommand);
+* Description: Initializes the struct instance passed. Each member initialized
+*		to NULL, 0, or false.  Allocates memory for commandArgs array of pointers.
+*
+* Parameters:
+*			currCommand (command *) command to be printed
+*/
 void initializeCommand(command* currCommand)
 {
 	size_t commArgSize = 513 * sizeof(currCommand->commandArgs[0]);
@@ -25,144 +32,93 @@ void initializeCommand(command* currCommand)
 }
 
 /*
-* void replaceArgVariables(command* currCommand);
-* Description:
+* char* replaceVariables(char* input);
+* Description:  Replaces $$ variable symbol with process ID. Handles strings
+*			without variables.
 *
 * Parameters:
+*		input (char*) string check for and replace variables.
 *
 * Returns:
 * Sources: realloc() https://www.geeksforgeeks.org/dynamic-memory-allocation-in-c-using-malloc-calloc-free-and-realloc/
 *		   strstr() https://www.tutorialspoint.com/c_standard_library/c_function_strstr.htm
 *		   strncat() https://www.man7.org/linux/man-pages/man3/strcat.3.html
 */
-void replaceArgVariables(command* currCmd, int i)
+char* replaceVariables(char* input)
 {
 	pid_t thisPid = getpid();
 	size_t pidStrSize = 15 * sizeof(char);
-	size_t argSize = sizeof(currCmd->commandArgs[i]);
+	size_t argSize = sizeof(input);
 	size_t bufferSize = pidStrSize + argSize;
 	char* pidStr;
 	char* argCopy;
 	char* substringPtr;
-
-	// Create Process ID String
+	  
+	// Create String from Process ID
+	// that way it can be concatenated with the rest of the string
 	pidStr = calloc(15, sizeof(char));
 	snprintf(pidStr, pidStrSize, "%d", thisPid);
 
-	// Make a Copy of Arg
-	argCopy = calloc(strlen(currCmd->commandArgs[i]) + 1, sizeof(char));
-	strcpy(argCopy, currCmd->commandArgs[i]);
+	// Make a Copy of the Argument
+	// building the new arg with the input pointer
+	// making a copy allows for clearing of the current input
+	// and manipulation of the copy as the new arg is built
+	argCopy = calloc(strlen(input) + 1, sizeof(char));
+	strcpy(argCopy, input);
 
-	// Find First Variable
+	// Get Pointer for First Variable '$$' to Replace
 	substringPtr = strstr(argCopy, "$$");
-	if (substringPtr != NULL)
+
+	// If No Variable is Found Return Without Replacing
+	if (substringPtr == NULL)
 	{
-		memset(currCmd->commandArgs[i], '\0', strlen(currCmd->commandArgs[i])); 
+		return input;
+	}
+	// Else a Variable is Found
+	// Clear Argument
+	else
+	{
+		memset(input, '\0', strlen(input));
 	}
 
 
-	// Find Remaining Variables 
+	// Build New Argument with Expanded Variables
 	while (substringPtr != NULL)
 	{
-		// Resize currCmd->commandArgs[i]
+		// Resize Input to Size of the Current Argument + Space for PID String
+		// to make sure there is no overflow or memory access issues
 		bufferSize = bufferSize + pidStrSize;
-		currCmd->commandArgs[i] = realloc(currCmd->commandArgs[i], bufferSize);
+		input = realloc(input, bufferSize);
 
-		// Save Ending and Replace Position of First $ With Null Terminator
+		// Save Ending After Variable and Insert Null Terminator Where $$ Appears
+		// to mark the end of the string to copy into the new argument
 		char* ending = &substringPtr[2];
 		substringPtr[0] = '\0';
 
-		// Create String From Prefix and Process ID
+		// Create String Including Variable
+		// by combining new argument created so far and process ID string
+		// If String Does Not Start with Variable Add Beginning of Argument Copy
 		if (argCopy[0] != '\0')
 		{
-			strncat(currCmd->commandArgs[i], argCopy, strlen(argCopy));
+			strncat(input, argCopy, strlen(argCopy));
 		}
-		strncat(currCmd->commandArgs[i], pidStr, strlen(pidStr));
+		strncat(input, pidStr, strlen(pidStr));
 
 		// Check Remaining Characters for Variable and Mark Next Variable
+		// when there are no variables left is how the loop terminates
 		substringPtr = strstr(ending, "$$");
 		if (substringPtr != NULL)
 		{
 			substringPtr[0] = '\0';
 		}
 
+
+		// If Partial String is Left after Variable was Replaced
+		// add the substring after the $$ and before the next $$ 
+		// or the end of string
 		if (ending[0] != '\0')
 		{
-			strncat(currCmd->commandArgs[i], ending, strlen(ending));
-		}
-		
-	}
-
-	free(argCopy);
-	free(pidStr);
-
-}
-
-/*
-* void replaceInputVariables(command* currCmd);
-* Description:
-*
-* Parameters:
-*
-* Returns:
-* Sources: realloc() https://www.geeksforgeeks.org/dynamic-memory-allocation-in-c-using-malloc-calloc-free-and-realloc/
-*		   strstr() https://www.tutorialspoint.com/c_standard_library/c_function_strstr.htm
-*		   strncat() https://www.man7.org/linux/man-pages/man3/strcat.3.html
-*/
-void replaceInputVariables(command* currCmd)
-{
-	pid_t thisPid = getpid();
-	size_t pidStrSize = 15 * sizeof(char);
-	size_t argSize = sizeof(currCmd->inputFile);
-	size_t bufferSize = pidStrSize + argSize;
-	char* pidStr;
-	char* argCopy;
-	char* substringPtr;
-
-	// Create Process ID String
-	pidStr = calloc(15, sizeof(char));
-	snprintf(pidStr, pidStrSize, "%d", thisPid);
-
-	// Make a Copy of Arg
-	argCopy = calloc(strlen(currCmd->inputFile) + 1, sizeof(char));
-	strcpy(argCopy, currCmd->inputFile);
-
-	// Find First Variable
-	substringPtr = strstr(argCopy, "$$");
-	if (substringPtr != NULL)
-	{
-		memset(currCmd->inputFile, '\0', strlen(currCmd->inputFile));
-	}
-
-
-	// Find Remaining Variables 
-	while (substringPtr != NULL)
-	{
-		// Resize currCmd->inputFile
-		bufferSize = bufferSize + pidStrSize;
-		currCmd->inputFile = realloc(currCmd->inputFile, bufferSize);
-
-		// Save Ending and Replace Position of First $ With Null Terminator
-		char* ending = &substringPtr[2];
-		substringPtr[0] = '\0';
-
-		// Create String From Prefix and Process ID
-		if (argCopy[0] != '\0')
-		{
-			strncat(currCmd->inputFile, argCopy, strlen(argCopy));
-		}
-		strncat(currCmd->inputFile, pidStr, strlen(pidStr));
-
-		// Check Remaining Characters for Variable and Mark Next Variable
-		substringPtr = strstr(ending, "$$");
-		if (substringPtr != NULL)
-		{
-			substringPtr[0] = '\0';
-		}
-
-		if (ending[0] != '\0')
-		{
-			strncat(currCmd->inputFile, ending, strlen(ending));
+			strncat(input, ending, strlen(ending));
 		}
 
 	}
@@ -170,89 +126,15 @@ void replaceInputVariables(command* currCmd)
 	free(argCopy);
 	free(pidStr);
 
+	return input;
 }
-
-/*
-* void replaceInputVariables(command* currCmd);
-* Description:
-*
-* Parameters:
-*
-* Returns:
-* Sources: realloc() https://www.geeksforgeeks.org/dynamic-memory-allocation-in-c-using-malloc-calloc-free-and-realloc/
-*		   strstr() https://www.tutorialspoint.com/c_standard_library/c_function_strstr.htm
-*		   strncat() https://www.man7.org/linux/man-pages/man3/strcat.3.html
-*/
-void replaceOutputVariables(command* currCmd)
-{
-	pid_t thisPid = getpid();
-	size_t pidStrSize = 15 * sizeof(char);
-	size_t argSize = sizeof(currCmd->outputFile);
-	size_t bufferSize = pidStrSize + argSize;
-	char* pidStr;
-	char* argCopy;
-	char* substringPtr;
-
-	// Create Process ID String
-	pidStr = calloc(15, sizeof(char));
-	snprintf(pidStr, pidStrSize, "%d", thisPid);
-
-	// Make a Copy of Arg
-	argCopy = calloc(strlen(currCmd->outputFile) + 1, sizeof(char));
-	strcpy(argCopy, currCmd->outputFile);
-
-	// Find First Variable
-	substringPtr = strstr(argCopy, "$$");
-	if (substringPtr != NULL)
-	{
-		memset(currCmd->outputFile, '\0', strlen(currCmd->outputFile));
-	}
-
-
-	// Find Remaining Variables 
-	while (substringPtr != NULL)
-	{
-		// Resize currCmd->outputFile
-		bufferSize = bufferSize + pidStrSize;
-		currCmd->outputFile = realloc(currCmd->outputFile, bufferSize);
-
-		// Save Ending and Replace Position of First $ With Null Terminator
-		char* ending = &substringPtr[2];
-		substringPtr[0] = '\0';
-
-		// Create String From Prefix and Process ID
-		if (argCopy[0] != '\0')
-		{
-			strncat(currCmd->outputFile, argCopy, strlen(argCopy));
-		}
-		strncat(currCmd->outputFile, pidStr, strlen(pidStr));
-
-		// Check Remaining Characters for Variable and Mark Next Variable
-		substringPtr = strstr(ending, "$$");
-		if (substringPtr != NULL)
-		{
-			substringPtr[0] = '\0';
-		}
-
-		if (ending[0] != '\0')
-		{
-			strncat(currCmd->outputFile, ending, strlen(ending));
-		}
-
-	}
-
-	free(argCopy);
-	free(pidStr);
-
-}
-
 /*
 * void parseVariables(command* currCommand);
-* Description:
+* Description: Calls replaceVariables() on all the arguments and files
+*			in the command struct instance passed.
 *
 * Parameters:
-*
-* Returns:
+*			currCommand (command *) command to be printed
 * Sources: realloc() https://www.geeksforgeeks.org/dynamic-memory-allocation-in-c-using-malloc-calloc-free-and-realloc/
 *		   strstr() https://www.tutorialspoint.com/c_standard_library/c_function_strstr.htm
 *		   strcat() https://www.man7.org/linux/man-pages/man3/strcat.3.html		   
@@ -261,35 +143,37 @@ void parseVariables(command* currCommand)
 {
 	int i = 0;
 
-	// Check each argument
+	// Replace all variables in each argument
 	while (currCommand->commandArgs[i] != NULL)
 	{
-		replaceArgVariables(currCommand, i);
-		// DELETE replaceVariables(currCommand->commandArgs[i]);
+		currCommand->commandArgs[i] = replaceVariables(currCommand->commandArgs[i]);
 		i++;
 	}
 
-	// Update Input File
+	// Replace all variables in Input File Argument
 	if (currCommand->inputFile != NULL)
 	{
-		replaceInputVariables(currCommand);
+		currCommand->inputFile = replaceVariables(currCommand->inputFile);
 	}
 
-	// Update Output File
+	//  Replace all variables in Input File Argument
 	if (currCommand->outputFile != NULL)
 	{
-		replaceOutputVariables(currCommand);
+		currCommand->outputFile = replaceVariables(currCommand->outputFile);
 	}
 	
 }
+
 /*
 * bool isBuiltIn(char * input);
-* Description:
+* Description: Returns true if the string passed is a built in command
+*			(cd, status, exit). 
 *
 * Parameters:
+*		input (char*) string to be checked if it is a built in command
 *
 * Returns:
-* Sources: 
+*		builtIn (bool) true if it is (cd, status, exit). False otherwise.
 */
 bool isBuiltIn(char * input)
 {
@@ -313,13 +197,52 @@ bool isBuiltIn(char * input)
 	return builtIn;
 	
 }
+
 /*
-* void createCommand(command* currCommand);
-* Description:
+* void setBackgroundFlag(command* currCommand, int i);
+* Description: Sets the background flag of command struct instance passed.
+*			If arguments end with &, it is removed. If the argument is not
+*			a built in (cd, status, exit) command, it sets the background
+*			flag to true.
 *
 * Parameters:
-*		
+*			currCommand (command *) command to set background flag for
+*			i (int) number of commands in commandArgs[]
+*/
+void setBackgroundFlag(command* currCommand, int i)
+{
+	bool hasBgFlag = strcmp(currCommand->commandArgs[i - 1], "&") == 0;
+	bool builtIn = isBuiltIn(currCommand->commandArgs[0]);
+	
+	// Add Background Flag and Remove Background Symbol '&'
+	if (hasBgFlag)
+	{
+		free(currCommand->commandArgs[i - 1]);
+		currCommand->commandArgs[i - 1] = NULL;
+		currCommand->inBackground = true;
+	}
+	
+	// Remove Background Symbol '&'
+	// built in commands cd, status, exit do not run in background
+	else if (hasBgFlag && builtIn)
+	{
+		free(currCommand->commandArgs[i - 1]);
+		currCommand->commandArgs[i - 1] = NULL;
+	}
+}
+
+/*
+* void createCommand(char * input);
+* Description: Creates a command struct from string and returns a pointer to it.
+*			Additonally, variables $$ are expanded to PID by the end.
+*
+* Parameters:
+*		input (char*) string to be parsed into a command struct instance.
+*				String may include '/n' newline character.
 * Returns:
+*		currCommand (command*) pointer to the newly created struct instance
+*		currCommand->commandArgs[0] (char*) will be set to NULL 
+*				if command is a space, newline or a comment
 * Sources: https://replit.com/@cs344/studentsc#student_info1.txt
 *		   Adapted from CS344 Assignment 1 & 2 
 *		   strcspn() https://stackoverflow.com/questions/2693776/removing-trailing-newline-character-from-fgets-input
@@ -334,27 +257,18 @@ command* createCommand(char* input)
 	// Get Command Term
 	char* currValue = strtok_r(input, " ", &saveptr);
 
-	// If Invalid Make Command Null and Return
+	// If Space, Newline or Comment Make Command Null and Return
 	if (currValue[0] == '\n' || currValue[0] == '#')
 	{
 		return currCommand;
 	}
-
-	// Remove New Line Character
-	currValue[strcspn(currValue, "\n")] = '\0';
-
-	// Add Valid Command Term as First Arg
-	// DELETE currCommand->command = calloc(strlen(currValue) + 1, sizeof(char));
-	// DELETE strcpy(currCommand->command, currValue);
-	currCommand->commandArgs[i] = calloc(strlen(currValue) + 1, sizeof(char));
-	strcpy(currCommand->commandArgs[i], currValue);
-	i++;
-	currValue = strtok_r(NULL, " ", &saveptr);
 	
 	while (currValue != NULL)
 	{	
 
-		// Remove New Line Character
+		// Remove New Line Character If Exists
+		// can't be done after loop because it will miss
+		// last argument if its an input or output file 
 		currValue[strcspn(currValue, "\n")] = '\0';
 
 		// Add Input File
@@ -388,42 +302,30 @@ command* createCommand(char* input)
 
 	}
 
-	bool hasBgFlag = strcmp(currCommand->commandArgs[i - 1], "&") == 0;
-	bool builtIn = isBuiltIn(currCommand->commandArgs[0]);
-	// Add Background State
-	if (hasBgFlag)
-	{
-		free(currCommand->commandArgs[i - 1]);
-		currCommand->commandArgs[i-1] = NULL;
-		currCommand->inBackground = true;
-	}
-	// Remove Background State for Built in Functions
-	else if(hasBgFlag && builtIn)
-	{
-		free(currCommand->commandArgs[i - 1]);
-		currCommand->commandArgs[i - 1] = NULL;
-	}
+	setBackgroundFlag(currCommand, i);
 
 	// Add Number of Arguments
 	currCommand->numArgs = i;
 
-	// Parse Process ID Variable
+	// Parse and Replace $$ Variable with PID
 	parseVariables(currCommand);
 
-	// DELETE Add Command
-	// DELETE currCommand->command = calloc(strlen(currCommand->commandArgs[0]) + 1, sizeof(char));
-	// DELETE strcpy(currCommand->command, currCommand->commandArgs[0]);
-	// DELETE printCommands(currCommand); 
 
 	return currCommand;
 }
 
+/*
+* void deconstructCommands(command* currCommand);
+* Description: Frees all memory for list of command struct instances.
+*
+* Parameters:
+*			currCommand (command *) head of list of command structs
+*/
 void deconstructCommands(command* currCommand)
 {
 	while (currCommand != NULL)
 	{
 		command* emptyCommand = currCommand;
-		// DELETE free(currCommand->command);
 		free(currCommand->inputFile);
 		free(currCommand->outputFile);
 
@@ -441,11 +343,14 @@ void deconstructCommands(command* currCommand)
 	
 }
 
-// DELETE void printCommand(command* currCommand)
-// DELETE {
-// DELETE 	printf("%s\n", currCommand->command);
-// DELETE }
 
+/*
+* void printCommandArgs(command* currCommand);
+* Description: Prints command arguments of command struct instance passed.
+*
+* Parameters:
+*			currCommand (command *) command to be printed
+*/
 void printCommandArgs(command* currCommand)
 {
 	for (int i = 0; i < 513; i++)
@@ -459,27 +364,65 @@ void printCommandArgs(command* currCommand)
 	printf("\n");
 }
 
+/*
+* void printInputFile(command* currCommand);
+* Description: Prints input file argument of command struct instance passed.
+*
+* Parameters:
+*			currCommand (command *) command to be printed
+*/
 void printInputFile(command* currCommand)
 {
 	printf("%s\n", currCommand->inputFile);
 }
 
+/*
+* void printOutputFile(command* currCommand);
+* Description: Prints output file argument of command struct instance passed.
+*
+* Parameters:
+*			currCommand (command *) command to be printed
+*/
 void printOutputFile(command* currCommand)
 {
 	printf("%s\n", currCommand->outputFile);
 }
 
 
+/*
+* void printInBackground(command* currCommand);
+* Description:  Prints background flag of command struct passed.
+*
+* Parameters:
+*			currCommand (command *) command to be printed
+*/
 void printInBackground(command* currCommand)
 {
 	printf("Start in Background: %d\n", currCommand->inBackground);
 }
 
+/*
+* void printNumArgs(command* currCommand);
+* Description: Prints number of arguments of command struct passed.  Is used 
+*			only in createCommand for ease of debugging.  If all reference to 
+*			numArgs is removed it doesn't affect function.
+*
+* Parameters:
+*			currCommand (command *) command to be printed
+*/
 void printNumArgs(command* currCommand)
 {
 	printf("numArgs: %d\n", currCommand->numArgs);
 }
 
+/*
+* void printNextCommand(command* currCommand);
+* Description: Prints next command first command argument if it exists.
+*			otherwise prints message that it doesn't exist.
+*
+* Parameters:
+*			currCommand (command *) command to be printed
+*/
 void printNextCommand(command* currCommand)
 {
 	if (currCommand->nextCommand != NULL)
@@ -493,11 +436,18 @@ void printNextCommand(command* currCommand)
 }
 
 
+/*
+void printCommands(command* currCommand);
+* Description: Prints command arguments, input file and output file if they exist,
+*			the background flag, number of arguments and the next command.
+*
+* Parameters: 
+*			currCommand (command *) command to be printed
+*/
 void printCommands(command* currCommand)
 {
 	printf("\n\n");
 	printf("------------\n");
-	// DELETE printCommand(currCommand);
 	printCommandArgs(currCommand);
 	if (currCommand->inputFile != NULL)
 	{

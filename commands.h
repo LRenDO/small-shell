@@ -1,16 +1,15 @@
 /*
 * Author: Ren Demeis-Ortiz
 * Course: CS 344 Sec. 400
-* Description: Header file with declarations for DELETE functions
-* Sources:
+* Description: Header file with declarations for command functions
+*			and struct.
 */
 #include <stdbool.h>
 
 #ifndef commands_H
 #define commands_H
-struct commands
+typedef struct commands
 {
-	// DELETE char* command;
 	char* commandArgs[513];
 	char* inputFile;
 	char* outputFile;
@@ -18,20 +17,17 @@ struct commands
 	int numArgs;
 	struct commands* nextCommand;
 
-};
-
-typedef struct commands command;
+}command;
 
 void initializeCommand(command* currCommand);
-void replaceArgVariables(command* currCmd, int i);
-void replaceInputVariables(command* currCmd);
-void replaceOutputVariables(command* currCmd);
+char* replaceVariables(char* input);
 void parseVariables(command* currCommand);
 bool isBuiltIn(char* input);
+void setBackgroundFlag(command* currCommand, int i);
 command* createCommand(char* input);
 void deconstructCommands(command* currCommand);
 
-// DELETE void printCommand(command* currCommand);
+// Print Functions Used for Debugging Only
 void printCommandArgs(command* currCommand);
 void printInputFile(command* currCommand);
 void printOutputFile(command* currCommand);

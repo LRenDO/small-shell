@@ -2,16 +2,14 @@
 * Author: Ren Demeis-Ortiz
 * Course: CS 344 Sec. 400
 * Description: Function definitions for Built in Command functions
-* Sources:
+*			cd, exit, status as well as a print background status
+*			function.
 */
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <stdio.h>
 #include <signal.h>
 #include <errno.h>
 #include "commands.h"
@@ -19,17 +17,20 @@
 
 /*
 * void changeDirectory(command* currCommand);
-* Description:
+* Description: When there are two arguments the second is the relative
 *
 * Parameters:
+*		currCommand (command*) command struct instance to get command
+*					from. 
+*			commandArgs[0]
+*			commandArgs[1] must be directory, relative or full path
 *
-* Returns:
 * Sources: chdir() https://man7.org/linux/man-pages/man2/chdir.2.html
 */
 void changeDirectory(command* currCommand)
 {
 
-	// If No Arguments Go To Home Directory
+	// If No Path Arguments Go To Home Directory
 	// Source: https://stackoverflow.com/questions/9493234/chdir-to-home-directory
 	if (currCommand->commandArgs[1] == NULL)
 	{
@@ -39,7 +40,7 @@ void changeDirectory(command* currCommand)
 			fflush(stderr);
 		}
 	}
-	// If Arguments Go To Argument Path
+	// If Path Arguments Go To Argument Path
 	else
 	{
 		if (chdir(currCommand->commandArgs[1]) != 0)
@@ -54,12 +55,11 @@ void changeDirectory(command* currCommand)
 
 /*
 * void printStatus(int status);
-* Description:
+* Description:  Prints the status passed with message.
 *
 * Parameters:
+*		status (int) status to be printed
 *
-* Returns:
-* Sources: chdir() https://man7.org/linux/man-pages/man2/chdir.2.html
 */
 void printStatus(int status) 
 {
@@ -77,12 +77,38 @@ void printStatus(int status)
 }
 
 /*
-* void prepareExit(pid_t pidArray[100], command* head, char * userInput);
-* Description:
+* void printBgStatus(int status);
+* Description: Prints the pid and status passed with message.
 *
 * Parameters:
+*		childPid (pid_t) pid to be printed in message
+*		status (int) status to be printed in message
+*/
+void printBgStatus(pid_t childPid, int status)
+{
+	if (WIFSIGNALED(status))
+	{
+		printf("Background PID %d is done: terminated by signal %d\n", childPid, WTERMSIG(status));
+		fflush(stdout);
+	}
+	else if (WIFEXITED(status)) {
+		printf("Background PID %d is done: exit value %d\n", childPid, WEXITSTATUS(status));
+		fflush(stdout);
+	}
+}
+
+/*
+* void prepareExit(pid_t pidArray[100], command* head, char * userInput);
+* Description: Prepares for exit by sending SIGTERM to all background 
+*			child processes still running. Waits for them to end and
+*			calls printBgStatus. Then frees allocated memory.
+			Finally, it exits successfully.
 *
-* Returns:
+* Parameters:
+*		head (command*) head of list of command structs used
+*		userInput (char*) pointer used to get user input
+*
+* Returns:  Exits program without returning
 * Sources: https://softwareengineering.stackexchange.com/questions/281880/best-way-to-signal-all-child-processes-to-terminate-using-c
 */
 void prepareExit(pid_t pidArray[100], command* head, char * userInput)
@@ -99,19 +125,12 @@ void prepareExit(pid_t pidArray[100], command* head, char * userInput)
 		}
 		childPid = waitpid(pidArray[i], &childStatus, 0);
 
-		if (WIFSIGNALED(childStatus))
-		{
-			printf("Background PID %d is done: terminated by signal %d\n", childPid, WTERMSIG(childStatus));
-			fflush(stdout);
-		}
-		else if (WIFEXITED(childStatus)) {
-			printf("Background PID %d is done: exit value %d\n", childPid, WEXITSTATUS(childStatus));
-			fflush(stdout);
-		}
+		printBgStatus(childPid, childStatus);
 
 		i++;
 	}
 
+	// Free Pointers to Allocated Memory
 	free(userInput);
 	deconstructCommands(head);
 	

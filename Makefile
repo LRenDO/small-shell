@@ -38,6 +38,7 @@ SRCS = smallsh.c
 SRCS += commands.c
 SRCS += builtInCommands.c
 SRCS += signalHandlers.c
+SRCS += ioRedirect.c
 
 #---------------#
 # Header  Files #
@@ -46,6 +47,7 @@ HDRS = smallsh.h
 HDRS += commands.h
 HDRS += builtInCommands.h
 HDRS += signalHandlers.h
+HDRS += ioRedirect.h
 
 #---------------#
 # Test  Files   #

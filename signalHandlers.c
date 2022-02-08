@@ -19,22 +19,20 @@
 
 /*
 * void changeModeOnSIGTSTP(int sigNum);
-* Description:  Toggles global variable foregroundOnly on SIGSTP signal
+* Description:  Toggles global variable foregroundOnly on SIGSTP signal. If it was
+*			0 it toggles to 1 and if it was 1 it toggles to 0. This allows parent to
+*			track entering and exiting foreground only mode.
 *
 * Parameters: 
+*		requires foregroundOnly (volatile sig_atomic_t) variable declared in header
 *
 * Returns:
-*		foregroundOnly variable is toggled between 1 and 0. 1 for on and 0 for off.
-* Sources:
+*		foregroundOnly (volatile sig_atomic_t) variable is toggled between 1 and 0. 
+*		1 for on and 0 for off.
+* Sources: sig_atomic_t https://stackoverflow.com/questions/42232257/shell-in-c-only-respond-to-sigtstp-after-pressing-enter-on-keyboard
 */
 void changeModeOnSIGTSTP(int sigNum)
 {
-	// DELETE block
-	//int bytes = -1;
-	//int length = 30;
-	//char message[] = "!signal handler doin' stuff!\n";
-	//write(STDOUT_FILENO, message, length);
-
 	int bytes = -1;
 	
 	if (!foregroundOnly)
