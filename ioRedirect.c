@@ -56,7 +56,7 @@ void redirectStdout(char* outputFile)
 		printf("Cannot open \"%s\" for output: ", outputFile);
 		fflush(stdout);
 		perror("");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	// Redirect stdout to Output File
@@ -64,6 +64,6 @@ void redirectStdout(char* outputFile)
 	if (result == -1) 
 	{
 		perror("Output File Redirect Error");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 }

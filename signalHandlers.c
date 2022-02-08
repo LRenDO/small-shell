@@ -15,7 +15,25 @@
 
 
 // DELETE Add SIGCHLD if time! https://stackoverflow.com/questions/7171722/how-can-i-handle-sigchld
+void setHandlers(sigact* ignore_action, sigact* switchMode_SIGTSTP, sigact* default_action)
+{
+	// Set Parent Handlers
+	// which will allow for different signaling options
+	// for parent and child
+	// Source: https://canvas.oregonstate.edu/courses/1884946/pages/exploration-signal-handling-api?module_item_id=21835981
+	default_action->sa_handler = SIG_DFL;
 
+	// Parent Ignores SIGINT (CTRL C)
+	ignore_action->sa_handler = SIG_IGN;
+	sigaction(SIGINT, ignore_action, NULL);
+
+	// SIGTSTP (CTRL Z) Signal Handler for Foreground-Only Mode
+	// allows for to toggle on and off
+	switchMode_SIGTSTP->sa_handler = changeModeOnSIGTSTP;
+	sigfillset(&switchMode_SIGTSTP->sa_mask);
+	switchMode_SIGTSTP->sa_flags = 0;
+	sigaction(SIGTSTP, switchMode_SIGTSTP, NULL);
+}
 
 /*
 * void changeModeOnSIGTSTP(int sigNum);
@@ -56,3 +74,4 @@ void changeModeOnSIGTSTP(int sigNum)
 		}
 	}
 }
+

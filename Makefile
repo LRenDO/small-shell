@@ -63,7 +63,7 @@ ADD += Makefile
 #------------------#
 # Name of Zip File #
 #------------------#
-ZNAME = demeisol_program2.zip
+ZNAME = demeisol_program3.zip
 
 #------------------------------------------------#
 # Valgrind Options                               #

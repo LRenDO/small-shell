@@ -47,16 +47,15 @@ void initializeCommand(command* currCommand)
 char* replaceVariables(char* input)
 {
 	pid_t thisPid = getpid();
-	size_t pidStrSize = 15 * sizeof(char);
+	size_t pidStrSize = 15 * sizeof(char);			// pid is a 4 byte signed ints
 	size_t argSize = sizeof(input);
 	size_t bufferSize = pidStrSize + argSize;
-	char* pidStr;
+	char pidStr[pidStrSize];
 	char* argCopy;
 	char* substringPtr;
 	  
 	// Create String from Process ID
 	// that way it can be concatenated with the rest of the string
-	pidStr = calloc(15, sizeof(char));
 	snprintf(pidStr, pidStrSize, "%d", thisPid);
 
 	// Make a Copy of the Argument
@@ -72,6 +71,7 @@ char* replaceVariables(char* input)
 	// If No Variable is Found Return Without Replacing
 	if (substringPtr == NULL)
 	{
+		free(argCopy);
 		return input;
 	}
 	// Else a Variable is Found
@@ -124,7 +124,6 @@ char* replaceVariables(char* input)
 	}
 
 	free(argCopy);
-	free(pidStr);
 
 	return input;
 }

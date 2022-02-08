@@ -11,6 +11,9 @@
 #include <signal.h>
 volatile sig_atomic_t foregroundOnly;
 
+typedef struct sigaction sigact;
+
+void setHandlers(sigact* ignore_action, sigact* switchMode_SIGTSTP, sigact* default_action);
 void changeModeOnSIGTSTP(int sigNum);
 
 #endif
