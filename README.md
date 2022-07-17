@@ -1,6 +1,4 @@
-smallsh Program
-------------------------------------------------------------------------------
-# Description
+# smallsh Program
 
 This program runs a mini shell and allows programs to be run in the
 background by using & at the end of the command.  Additionally it allows
@@ -17,22 +15,21 @@ Note: Highly recommend to create a separate directory for testing. Know
 	change file and directory contents in that directory depending on the  
 	commands you run.
 
-------------------------------------------------------------------------------
-# Requirements
+
+## Requirements
 
 -Linux
 -gcc (std=gnu99)
 
-------------------------------------------------------------------------------
-# Create Executable
+
+## Create Executable
 
 -Navigate to directory where files are saved
 -Use command below:
 
 make
 
-------------------------------------------------------------------------------
-# Run the Program
+## Run the Program
 
 -Navigate to directory where movie files are saved
 -Create Executable as described above
@@ -40,16 +37,16 @@ make
 
 smallsh
 
-------------------------------------------------------------------------------
-# Removing Executable Only
+
+## Removing Executable Only
 
 -Navigate to directory where files are saved
 -Use command below:
 
 make clean
 
-------------------------------------------------------------------------------
-# Removing All Files (except files and directories created during execution)
+
+## Removing All Files (except files and directories created during execution)
 
 -Navigate to directory where files are saved
 -Use command below:
