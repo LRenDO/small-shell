@@ -1,7 +1,7 @@
 /*
 * Author: Ren Demeis-Ortiz
 * Course: CS 344 Sec. 400
-* Description: Function definitions for DELETE functions
+* Description: Function definitions for shell functions
 */
 #include <string.h>
 #include <stdio.h>

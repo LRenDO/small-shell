@@ -31,7 +31,7 @@ void setHandlers(sigact* ignore_action, sigact* switchMode_SIGTSTP, sigact* defa
 	// allows for to toggle on and off
 	switchMode_SIGTSTP->sa_handler = changeModeOnSIGTSTP;
 	sigfillset(&switchMode_SIGTSTP->sa_mask);
-	switchMode_SIGTSTP->sa_flags = 0;
+	switchMode_SIGTSTP->sa_flags = SA_RESTART;
 	sigaction(SIGTSTP, switchMode_SIGTSTP, NULL);
 }
 
